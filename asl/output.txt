@@ -1,0 +1,74 @@
+=======================================================
+=== BEGIN examples/jpbasic_chkt typecheck =============
+**** jpbasic_chkt_01.asl ....OK
+**** jpbasic_chkt_02.asl ....OK
+**** jpbasic_chkt_03.asl ....OK
+**** jpbasic_chkt_04.asl ....OK
+=== END examples/jpbasic_chkt typecheck ===============
+=======================================================
+
+=======================================================
+=== BEGIN examples/jp_chkt_* typecheck ================
+**** jp_chkt_01.asl ....OK
+**** jp_chkt_02.asl ....OK
+**** jp_chkt_03.asl ....OK
+**** jp_chkt_04.asl ....OK
+**** jp_chkt_05.asl ....OK
+**** jp_chkt_06.asl ....OK
+**** jp_chkt_07.asl ....OK
+**** jp_chkt_08.asl ....Wrong output
+2c2
+< Line 12:6 error: Identifier 'p' is a void returning function.
+---
+> Line 12:4 error: Assignment with incompatible types.
+
+**** jp_chkt_09.asl ....OK
+**** jp_chkt_10.asl ....OK
+**** jp_chkt_11.asl ....OK
+**** jp_chkt_12.asl ....OK
+**** jp_chkt_13.asl ....OK
+**** jp_chkt_14.asl ....Wrong output
+9a10
+> Line 8:2 error: Basic type required in 'write'.
+
+**** jp_chkt_15.asl ....OK
+**** jp_chkt_16.asl ....OK
+**** jp_chkt_17.asl ....OK
+**** jp_chkt_18.asl ....OK
+**** jp_chkt_19.asl ....OK
+**** jp_chkt_20.asl ....Wrong output
+7c7
+< Line 24:6 error: Identifier 'g' is a void returning function.
+---
+> Line 24:4 error: Assignment with incompatible types.
+
+=== END examples/jp_chkt_* typecheck ==================
+=======================================================
+
+=======================================================
+=== BEGIN examples/jpbasic_genc_* codegen =============
+**** jpbasic_genc_01.asl ....Compilation errors
+**** jpbasic_genc_02.asl ....Compilation errors
+**** jpbasic_genc_03.asl ....Compilation errors
+**** jpbasic_genc_04.asl ....Compilation errors
+=== END examples/jpbasic_genc_* codegen ===============
+=======================================================
+
+=======================================================
+=== BEGIN examples/jp_genc_* codegen ==================
+**** jp_genc_01.asl ....Compilation errors
+**** jp_genc_02.asl ....Compilation errors
+**** jp_genc_03.asl ....Compilation errors
+**** jp_genc_04.asl ....Compilation errors
+**** jp_genc_05.asl ....Compilation errors
+**** jp_genc_06.asl ....Compilation errors
+**** jp_genc_07.asl ....Compilation errors
+**** jp_genc_08.asl ....Compilation errors
+**** jp_genc_09.asl ....Compilation errors
+**** jp_genc_10.asl ....Compilation errors
+**** jp_genc_11.asl ....Compilation errors
+**** jp_genc_12.asl ....Compilation errors
+**** jp_genc_13.asl ....Compilation errors
+**** jp_genc_14.asl ....Compilation errors
+=== END examples/jp_genc_* codegen ====================
+=======================================================

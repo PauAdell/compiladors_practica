@@ -62,8 +62,11 @@ public:
   // Non visited nodes have been commented out:
   antlrcpp::Any visitProgram(AslParser::ProgramContext *ctx);
   antlrcpp::Any visitFunction(AslParser::FunctionContext *ctx);
+  antlrcpp::Any visitParameters(AslParser::ParametersContext *ctx);
   antlrcpp::Any visitDeclarations(AslParser::DeclarationsContext *ctx);
   antlrcpp::Any visitVariable_decl(AslParser::Variable_declContext *ctx);
+  antlrcpp::Any visitBasictype(AslParser::BasictypeContext *ctx);
+  antlrcpp::Any visitArraytype(AslParser::ArraytypeContext *ctx);
   antlrcpp::Any visitType(AslParser::TypeContext *ctx);
   // antlrcpp::Any visitStatements(AslParser::StatementsContext *ctx);
   // antlrcpp::Any visitAssignStmt(AslParser::AssignStmtContext *ctx);
@@ -73,9 +76,10 @@ public:
   // antlrcpp::Any visitWriteExpr(AslParser::WriteExprContext *ctx);
   // antlrcpp::Any visitWriteString(AslParser::WriteStringContext *ctx);
   // antlrcpp::Any visitLeft_expr(AslParser::Left_exprContext *ctx);
+  antlrcpp::Any visitParenthesis(AslParser::ParenthesisContext *ctx);
   // antlrcpp::Any visitExprIdent(AslParser::ExprIdentContext *ctx);
   // antlrcpp::Any visitArithmetic(AslParser::ArithmeticContext *ctx);
-  // antlrcpp::Any visitRelational(AslParser::RelationalContext *ctx);
+  antlrcpp::Any visitRelational(AslParser::RelationalContext *ctx);
   // antlrcpp::Any visitValue(AslParser::ValueContext *ctx);
   // antlrcpp::Any visitIdent(AslParser::IdentContext *ctx);
 
