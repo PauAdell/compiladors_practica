@@ -84,6 +84,8 @@ antlrcpp::Any TypeCheckVisitor::visitProgram(AslParser::ProgramContext *ctx) {
 
 antlrcpp::Any TypeCheckVisitor::visitFunction(AslParser::FunctionContext *ctx) {
   DEBUG_ENTER();
+  // std::cout << "HERE" << std::endl;
+
   SymTable::ScopeId sc = getScopeDecor(ctx);
   Symbols.pushThisScope(sc);
   // Symbols.print();
@@ -295,11 +297,14 @@ antlrcpp::Any TypeCheckVisitor::visitFunctionCall(AslParser::FunctionCallContext
   visit(ctx->ident());
   visit(ctx->paramexp());
   TypesMgr::TypeId tf = getTypeDecor(ctx->ident());
-
+  
   if(not Types.isErrorTy(tf) and not Types.isFunctionTy(tf)) {
     Errors.isNotCallable(ctx->ident());
   }
   else if (not Types.isErrorTy(tf) and Types.isFunctionTy(tf)) {      // si es tipus error vol dir que l'ID ja esta declarat
+    //std::cout << Types.getFuncReturnType(tf) << std::endl;
+    if(Types.isVoidTy(Types.getFuncReturnType(tf))) Errors.isNotFunction(ctx); // mirar si l'expressió és void (si estas calulant una expressió cap valor pot ser de tipus void)
+
     auto numCallParameters = (ctx->paramexp()->expr()).size();        // per tant no podem mirar si te paramatres
 
     if (Types.getNumOfParameters(tf) != numCallParameters)
