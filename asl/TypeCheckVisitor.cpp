@@ -84,8 +84,6 @@ antlrcpp::Any TypeCheckVisitor::visitProgram(AslParser::ProgramContext *ctx) {
 
 antlrcpp::Any TypeCheckVisitor::visitFunction(AslParser::FunctionContext *ctx) {
   DEBUG_ENTER();
-  // std::cout << "HERE" << std::endl;
-
   SymTable::ScopeId sc = getScopeDecor(ctx);
   Symbols.pushThisScope(sc);
   // Symbols.print();
@@ -134,13 +132,33 @@ antlrcpp::Any TypeCheckVisitor::visitAssignStmt(AslParser::AssignStmtContext *ct
   DEBUG_ENTER();
   visit(ctx->left_expr());
   visit(ctx->expr());
-  TypesMgr::TypeId t1 = getTypeDecor(ctx->left_expr());
-  TypesMgr::TypeId t2 = getTypeDecor(ctx->expr());
-  if ((not Types.isErrorTy(t1)) and (not Types.isErrorTy(t2)) and
-      (not Types.copyableTypes(t1, t2)))
-    Errors.incompatibleAssignment(ctx->ASSIGN());
-  if ((not Types.isErrorTy(t1)) and (not getIsLValueDecor(ctx->left_expr())))
+
+  TypesMgr::TypeId tlexpr = getTypeDecor(ctx->left_expr());
+  TypesMgr::TypeId trexpr = getTypeDecor(ctx->expr());
+
+  TypesMgr::TypeId tfrexpr = trexpr;
+
+  if (not Types.isErrorTy(tlexpr) and Types.isFunctionTy(trexpr))
+    tlexpr = Types.getFuncReturnType(trexpr);
+
+  if (not Types.isErrorTy(trexpr) and Types.isFunctionTy(trexpr))
+    trexpr = Types.getFuncReturnType(trexpr);
+
+  if (not Types.isErrorTy(tlexpr) and not Types.isErrorTy(trexpr)){
+    if (Types.isFunctionTy(tfrexpr) and Types.isVoidFunction(tfrexpr)
+        and ctx->expr()->getText().find('(') < (ctx->expr()->getText()).size())   // si hi ha un parentesis es que es una crida a funcio
+           Errors.isNotFunction(ctx->expr());
+
+    else if((Types.isFunctionTy(tfrexpr) and Types.isVoidFunction(tfrexpr))
+    || not Types.copyableTypes(tlexpr, trexpr)){
+          Errors.incompatibleAssignment(ctx->ASSIGN());
+
+    }
+  }
+
+  if ((not Types.isErrorTy(tlexpr)) and (not getIsLValueDecor(ctx->left_expr())))
     Errors.nonReferenceableLeftExpr(ctx->left_expr());
+
   DEBUG_EXIT();
   return 0;
 }
@@ -177,13 +195,11 @@ antlrcpp::Any TypeCheckVisitor::visitReturnStmt(AslParser::ReturnStmtContext *ct
     TypesMgr::TypeId texpr = getTypeDecor(ctx->expr());
     if(not Types.isErrorTy(t) and not Types.isErrorTy(texpr)
         and not Types.copyableTypes(t, texpr)) {
-      std::cout << "entra aqui whattt" << std::endl;
       Errors.incompatibleReturn(ctx->RETURN());
     }
   }
   else {
     if (not Types.isErrorTy(t) and not Types.isVoidTy(t)) {
-      std::cout << "entra aqui" << std::endl;
       Errors.incompatibleReturn(ctx->RETURN());
     }
   }
@@ -198,29 +214,24 @@ antlrcpp::Any TypeCheckVisitor::visitProcCall(AslParser::ProcCallContext *ctx) {
   TypesMgr::TypeId tf = getTypeDecor(ctx->ident());
   if (not Types.isErrorTy(tf) and not Types.isFunctionTy(tf))
     Errors.isNotCallable(ctx->ident());
-
-  else if (not Types.isErrorTy(tf) and Types.isFunctionTy(tf)) {          // si es tipus error vol dir que l'ID ja esta declarat
-    auto numCallParameters = (ctx->paramexp()->expr()).size();            // per tant no podem mirar si te paramatres
+  else if (not Types.isErrorTy(tf) and Types.isFunctionTy(tf)) {
+    auto numCallParameters = (ctx->paramexp()->expr()).size(); 
     if (Types.getNumOfParameters(tf) != numCallParameters)
       Errors.numberOfParameters(ctx);
-
     else {
-
       auto funcParams = Types.getFuncParamsTypes(tf);
       for (uint i = 0; i < numCallParameters; ++i) {
         TypesMgr::TypeId texpr = getTypeDecor(ctx->paramexp()->expr(i));
         if (not Types.isErrorTy(texpr) and not Types.copyableTypes(funcParams[i], texpr)) {
-          std::cout << "entronento" << std::endl;
           Errors.incompatibleParameter(ctx->paramexp()->expr(i), i+1, ctx);
         }
       }
-
     }
   }
+
   bool b = getIsLValueDecor(ctx->ident());
   putTypeDecor(ctx, tf);
   putIsLValueDecor(ctx, b);
-
   DEBUG_EXIT();
   return 0;
 }
@@ -230,8 +241,13 @@ antlrcpp::Any TypeCheckVisitor::visitReadStmt(AslParser::ReadStmtContext *ctx) {
   visit(ctx->left_expr());
   TypesMgr::TypeId t1 = getTypeDecor(ctx->left_expr());
   if ((not Types.isErrorTy(t1)) and (not Types.isPrimitiveTy(t1)) and
-      (not Types.isFunctionTy(t1)))
+      (not Types.isFunctionTy(t1)) and (not (ctx->left_expr()->expr()))){
     Errors.readWriteRequireBasic(ctx);
+  }
+  else if(not Types.isErrorTy(t1) and Types.isArrayTy(t1) and
+      (ctx->left_expr()->expr()) and not Types.isPrimitiveTy(Types.getArrayElemType(t1)))
+      Errors.readWriteRequireBasic(ctx);
+
   if ((not Types.isErrorTy(t1)) and (not getIsLValueDecor(ctx->left_expr())))
     Errors.nonReferenceableExpression(ctx);
   DEBUG_EXIT();
@@ -242,8 +258,9 @@ antlrcpp::Any TypeCheckVisitor::visitWriteExpr(AslParser::WriteExprContext *ctx)
   DEBUG_ENTER();
   visit(ctx->expr());
   TypesMgr::TypeId t1 = getTypeDecor(ctx->expr());
-  if ((not Types.isErrorTy(t1)) and (not Types.isPrimitiveTy(t1)))
+  if ((not Types.isErrorTy(t1)) and (not Types.isPrimitiveTy(t1))){
     Errors.readWriteRequireBasic(ctx);
+    }
   DEBUG_EXIT();
   return 0;
 }
@@ -297,31 +314,28 @@ antlrcpp::Any TypeCheckVisitor::visitFunctionCall(AslParser::FunctionCallContext
   visit(ctx->ident());
   visit(ctx->paramexp());
   TypesMgr::TypeId tf = getTypeDecor(ctx->ident());
-  
-  if(not Types.isErrorTy(tf) and not Types.isFunctionTy(tf)) {
+
+  if (not Types.isErrorTy(tf) and not Types.isFunctionTy(tf)) {
     Errors.isNotCallable(ctx->ident());
-  }
-  else if (not Types.isErrorTy(tf) and Types.isFunctionTy(tf)) {      // si es tipus error vol dir que l'ID ja esta declarat
-    //std::cout << Types.getFuncReturnType(tf) << std::endl;
-    if(Types.isVoidTy(Types.getFuncReturnType(tf))) Errors.isNotFunction(ctx); // mirar si l'expressió és void (si estas calulant una expressió cap valor pot ser de tipus void)
-
-    auto numCallParameters = (ctx->paramexp()->expr()).size();        // per tant no podem mirar si te paramatres
-
+    tf = Types.createErrorTy();
+    }
+  else if (not Types.isErrorTy(tf) and Types.isFunctionTy(tf)) {
+    auto numCallParameters = (ctx->paramexp()->expr()).size(); 
     if (Types.getNumOfParameters(tf) != numCallParameters)
       Errors.numberOfParameters(ctx);
-
     else {
       auto funcParams = Types.getFuncParamsTypes(tf);
       for (uint i = 0; i < numCallParameters; ++i) {
         TypesMgr::TypeId texpr = getTypeDecor(ctx->paramexp()->expr(i));
-
-        if (not Types.isErrorTy(texpr) and not Types.copyableTypes(funcParams[i], texpr))
+        if (not Types.isErrorTy(texpr) and not Types.copyableTypes(funcParams[i], texpr)) {
           Errors.incompatibleParameter(ctx->paramexp()->expr(i), i+1, ctx);
+        }
       }
     }
   }
-
-  if (Types.isFunctionTy(tf) and not Types.isVoidFunction(tf)) tf = Types.getFuncReturnType(tf);
+  if (Types.isFunctionTy(tf) and not Types.isVoidFunction(tf)) {
+    tf = Types.getFuncReturnType(tf);
+  }
   bool b = getIsLValueDecor(ctx->ident());
   putTypeDecor(ctx, tf);
   putIsLValueDecor(ctx, b);
@@ -476,13 +490,13 @@ antlrcpp::Any TypeCheckVisitor::visitExprIdent(AslParser::ExprIdentContext *ctx)
 antlrcpp::Any TypeCheckVisitor::visitIdent(AslParser::IdentContext *ctx) {
   DEBUG_ENTER();
   std::string ident = ctx->ID()->getText();
-  if (Symbols.findInStack(ident) == -1) {               // si el simbol no es troba en la pila error
+  if (Symbols.findInStack(ident) == -1) {
     Errors.undeclaredIdent(ctx->ID());
     TypesMgr::TypeId te = Types.createErrorTy();
     putTypeDecor(ctx, te);
     putIsLValueDecor(ctx, true);
   }
-  else {                                                // altrament
+  else {
     TypesMgr::TypeId ti = Symbols.getType(ident);
     putTypeDecor(ctx, ti);
     if (Symbols.isFunctionClass(ident))
